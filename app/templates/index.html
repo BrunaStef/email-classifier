@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Email Classifier — Demo</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-slate-50 min-h-screen flex items-center justify-center p-6">
+  <div class="max-w-3xl w-full bg-white shadow-lg rounded-2xl p-6">
+    <h1 class="text-2xl font-semibold mb-4">Classificador de Emails — Produtivo / Improdutivo</h1>
+
+    <label class="block mb-2 font-medium">Cole o texto do email</label>
+    <textarea id="emailText" rows="8" class="w-full border p-3 rounded mb-4" placeholder="Cole aqui o e-mail..."></textarea>
+
+    <label class="block mb-2 font-medium">Ou faça upload (.txt / .pdf)</label>
+    <input id="fileInput" type="file" accept=".txt,.pdf" class="mb-4" />
+
+    <div class="flex gap-3">
+      <button id="sendBtn" class="px-4 py-2 bg-indigo-600 text-white rounded">Analisar</button>
+      <button id="clearBtn" class="px-4 py-2 bg-gray-200 rounded">Limpar</button>
+    </div>
+
+    <div id="result" class="mt-6 hidden">
+      <h2 class="text-xl font-semibold mb-2">Resultado</h2>
+      <div class="bg-slate-50 border p-4 rounded">
+        <p><strong>Categoria:</strong> <span id="cat" class="text-indigo-700"></span></p>
+        <p class="mt-3"><strong>Resposta sugerida:</strong></p>
+        <div id="resp" class="mt-1 p-3 bg-white border rounded"></div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const sendBtn = document.getElementById('sendBtn');
+    const clearBtn = document.getElementById('clearBtn');
+    const fileInput = document.getElementById('fileInput');
+    const emailText = document.getElementById('emailText');
+    const resultBox = document.getElementById('result');
+    const catSpan = document.getElementById('cat');
+    const respDiv = document.getElementById('resp');
+
+    sendBtn.addEventListener('click', async () => {
+      sendBtn.disabled = true;
+      sendBtn.innerText = "Processando...";
+      const form = new FormData();
+      const text = emailText.value.trim();
+      if (text) form.append('email_text', text);
+      if (fileInput.files.length > 0) {
+        form.append('file', fileInput.files[0]);
+      }
+      try {
+        const res = await fetch('/analyze', { method: 'POST', body: form });
+        const json = await res.json();
+        if (res.ok) {
+          catSpan.innerText = json.category;
+          respDiv.innerText = json.suggested_response;
+          resultBox.classList.remove('hidden');
+        } else {
+          alert(json.error || 'Erro ao processar');
+        }
+      } catch(err) {
+        console.error(err);
+        alert('Erro de conexão: ' + err.message);
+      } finally {
+        sendBtn.disabled = false;
+        sendBtn.innerText = "Analisar";
+      }
+    });
+
+    clearBtn.addEventListener('click', () => {
+      emailText.value = '';
+      fileInput.value = '';
+      resultBox.classList.add('hidden');
+    });
+  </script>
+</body>
+</html>
